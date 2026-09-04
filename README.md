@@ -1,77 +1,121 @@
 # Fraud-Spike Sentinel
 
-A defense-only transaction fraud detection and investigation system for identifying unusual activity and routing high-risk transactions for review.
+A defense-focused transaction fraud detection and investigation system for identifying unusual activity and routing high-risk transactions for review.
 
 ## 🚀 Live Demo
 
-**Try the deployed Streamlit dashboard:** open the Streamlit app URL provided with this project submission.
+**Try the deployed dashboard:**
 
-### Live investigation result
+👉 https://fraud-spike-sentinel-xbmwp6dsojphyem2hjdgu5.streamlit.app/
 
-The dashboard takes transaction and behavioral signals, calculates a risk score, shows the main reasons behind the result, recommends a bounded action, and records an audit event.
+The dashboard provides transaction-level risk scoring, investigation reasons, bounded decisions, and an audit event for each investigation.
+
+### Example investigation
 
 ![Live investigation result](assets/demo-result.svg)
 
 **Example result:** `100.0%` risk score → `ESCALATE_FOR_REVIEW`
 
-> The screenshot/visual above is a representative result from the live demo using synthetic benchmark data.
+> The example above uses synthetic benchmark data and is intended to demonstrate the project workflow.
 
 ## Project capabilities
 
 - Synthetic transaction data generation
 - Separate training and test data
 - Fraud classification and performance measurement
-- Risk scoring for individual transactions
-- Clear investigation reasons based on transaction behavior
-- Bounded investigation workflow
+- Transaction-level risk scoring
+- Behavioral investigation reasons
+- Three-level investigation workflow
 - Audit trail for investigation decisions
 - FastAPI backend
 - Streamlit dashboard
-- Automated tests and GitHub Actions CI
-
-> This project uses synthetic data. It does not connect to live payment systems and does not perform offensive security activity.
+- Automated tests with GitHub Actions CI
 
 ## How it works
 
 1. Transaction and behavioral information is collected as input.
 2. The detection model calculates the probability that the transaction is suspicious.
-3. The investigation layer checks the transaction signals and identifies the strongest reasons for the result.
-4. The system assigns one of three outcomes: `ALLOW_MONITORING`, `VERIFY`, or `ESCALATE_FOR_REVIEW`.
-5. High-risk cases are routed for human review rather than automatically taking a financial action.
+3. The investigation layer evaluates transaction behavior and identifies the strongest risk signals.
+4. The system assigns one of three outcomes:
+   - `ALLOW_MONITORING`
+   - `VERIFY`
+   - `ESCALATE_FOR_REVIEW`
+5. High-risk cases are routed for human review instead of automatically taking a financial action.
 6. An audit event records the workflow, decision, and timestamp.
+
+## Detection signals
+
+The investigation uses transaction and behavioral features such as:
+
+- Transaction amount
+- Transaction hour
+- Customer transaction count in the last 24 hours
+- Customer average transaction amount
+- Device transaction count in the last hour
+- Number of customers associated with a device
+- Distance from previous customer activity
+- New device indicator
+- New location indicator
+- Merchant fraud rate over the previous 7 days
+
+## Example performance
+
+The included synthetic benchmark contains **50,000 transactions** with a held-out test set of **10,000 transactions**.
+
+| Metric | Result |
+|---|---:|
+| Fraud rate | 5.51% |
+| Precision | 71.01% |
+| Recall | 97.82% |
+| F1 score | 82.29% |
+| PR-AUC | 97.38% |
+
+These results are from synthetic data and should not be interpreted as production fraud-detection performance.
 
 ## Project structure
 
 ```text
 fraud-spike-sentinel/
+├── .github/
+│   └── workflows/
+│       └── ci.yml
 ├── app/
 │   ├── api.py
 │   ├── investigator.py
 │   └── model_service.py
+├── assets/
+│   └── demo-result.svg
 ├── data/
+│   └── .gitkeep
 ├── models/
+│   ├── .gitkeep
+│   └── metrics.json
 ├── scripts/
 │   ├── generate_data.py
 │   └── train.py
 ├── tests/
 │   └── test_investigator.py
 ├── dashboard.py
+├── LICENSE
+├── README.md
 ├── requirements.txt
-└── .gitignore
+├── pytest.ini
+├── run_project.bat
+└── run_project.sh
 ```
 
 ## Quick start
 
 ### 1. Create an environment
 
-Windows:
+**Windows**
 
 ```powershell
 python -m venv .venv
 .venv\Scripts\activate
 ```
 
-macOS/Linux:
+**macOS/Linux**
 
 ```bash
 python3 -m venv .venv
@@ -96,26 +140,19 @@ python scripts/generate_data.py --rows 50000
 python scripts/train.py
 ```
 
-This creates:
+This creates the local model file and benchmark metrics used by the application.
 
-- `models/fraud_model.joblib`
-- `models/metrics.json`
-
-### 5. Quick launch on Windows
-
-After installing Python, you can also run `run_project.bat` to install dependencies, prepare the model, and open the API/dashboard in separate terminals.
-
-### 6. Start the API
+### 5. Start the API
 
 ```bash
 uvicorn app.api:app --reload
 ```
 
-API docs:
+API documentation:
 
 `http://127.0.0.1:8000/docs`
 
-### 7. Start the dashboard
+### 6. Start the dashboard
 
 In another terminal:
 
@@ -124,6 +161,10 @@ streamlit run dashboard.py
 ```
 
 Then open the local Streamlit URL shown in the terminal.
+
+### Windows shortcut
+
+You can also run `run_project.bat` after installing Python. It prepares the project and launches the API and dashboard in separate terminals.
 
 ## Example API request
 
@@ -142,14 +183,29 @@ Then open the local Streamlit URL shown in the terminal.
 }
 ```
 
+## Investigation decisions
+
+| Risk score | Decision |
+|---|---|
+| `< 0.50` | `ALLOW_MONITORING` |
+| `0.50 – 0.79` | `VERIFY` |
+| `≥ 0.80` | `ESCALATE_FOR_REVIEW` |
+
+The thresholds are intentionally simple and transparent so that the result can be reviewed alongside the underlying transaction signals.
+
 ## Design notes
 
-- Fraud detection is evaluated using precision, recall, F1 and PR-AUC because the dataset contains far fewer fraudulent transactions than normal transactions.
-- The test set is kept separate from training so the reported performance is measured on unseen transactions.
-- The investigation layer provides specific behavioral reasons instead of returning only a score.
-- The workflow is intentionally bounded: the system does not block accounts, move money, or execute financial actions automatically.
+- The test set is kept separate from training so reported performance is measured on unseen transactions.
+- Precision, recall, F1, and PR-AUC are reported because fraudulent transactions are much less common than normal transactions in the synthetic dataset.
+- Investigation results include specific behavioral reasons instead of returning only a score.
+- The workflow is intentionally bounded: it does not block accounts, move money, or execute financial actions automatically.
 - High-risk transactions are sent for review and recorded in an audit event.
+- The project is designed for demonstration and development use with synthetic data.
 
-## Important
+## Safety and scope
 
-The included example metrics and demo result are based on synthetic benchmark data. They should not be treated as production fraud-detection performance. For a fresh benchmark, generate the data and run the training script again.
+This project uses synthetic transaction data only. It does not connect to live payment systems, process real financial transactions, or perform offensive security activity.
+
+## License
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
