@@ -1,6 +1,6 @@
 # Fraud-Spike Sentinel
 
-A defense-only AI/ML system for detecting unusual fraud activity and investigating high-risk transactions.
+A defense-only transaction fraud detection and investigation system for identifying unusual activity and routing high-risk transactions for review.
 
 ## 🚀 Live Demo
 
@@ -8,7 +8,7 @@ A defense-only AI/ML system for detecting unusual fraud activity and investigati
 
 ### Live investigation result
 
-The demo takes transaction and behavioral signals, produces a risk score, explains the strongest risk signals, recommends a bounded action, and records an audit event.
+The dashboard takes transaction and behavioral signals, calculates a risk score, shows the main reasons behind the result, recommends a bounded action, and records an audit event.
 
 ![Live investigation result](assets/demo-result.svg)
 
@@ -16,19 +16,29 @@ The demo takes transaction and behavioral signals, produces a risk score, explai
 
 > The screenshot/visual above is a representative result from the live demo using synthetic benchmark data.
 
-## What it demonstrates
+## Project capabilities
 
-- Synthetic transaction generation
-- Leakage-safe train/test split
-- Fraud classification with precision, recall, F1 and PR-AUC
-- Risk scoring
-- Explainable investigation reasons
+- Synthetic transaction data generation
+- Separate training and test data
+- Fraud classification and performance measurement
+- Risk scoring for individual transactions
+- Clear investigation reasons based on transaction behavior
 - Bounded investigation workflow
-- Audit trail
+- Audit trail for investigation decisions
 - FastAPI backend
 - Streamlit dashboard
+- Automated tests and GitHub Actions CI
 
 > This project uses synthetic data. It does not connect to live payment systems and does not perform offensive security activity.
+
+## How it works
+
+1. Transaction and behavioral information is collected as input.
+2. The detection model calculates the probability that the transaction is suspicious.
+3. The investigation layer checks the transaction signals and identifies the strongest reasons for the result.
+4. The system assigns one of three outcomes: `ALLOW_MONITORING`, `VERIFY`, or `ESCALATE_FOR_REVIEW`.
+5. High-risk cases are routed for human review rather than automatically taking a financial action.
+6. An audit event records the workflow, decision, and timestamp.
 
 ## Project structure
 
@@ -80,7 +90,7 @@ pip install -r requirements.txt
 python scripts/generate_data.py --rows 50000
 ```
 
-### 4. Train the model
+### 4. Train the detection model
 
 ```bash
 python scripts/train.py
@@ -132,14 +142,14 @@ Then open the local Streamlit URL shown in the terminal.
 }
 ```
 
-## Interview talking points
+## Design notes
 
-1. Why precision/recall matter more than raw accuracy for imbalanced fraud data.
-2. Why the test set is held out from model training.
-3. How false positives create merchant/customer friction.
-4. Why the investigation workflow is bounded and auditable.
-5. How the system could be extended with real payment-provider data without changing the core architecture.
+- Fraud detection is evaluated using precision, recall, F1 and PR-AUC because the dataset contains far fewer fraudulent transactions than normal transactions.
+- The test set is kept separate from training so the reported performance is measured on unseen transactions.
+- The investigation layer provides specific behavioral reasons instead of returning only a score.
+- The workflow is intentionally bounded: the system does not block accounts, move money, or execute financial actions automatically.
+- High-risk transactions are sent for review and recorded in an audit event.
 
 ## Important
 
-Do not claim the example metrics in screenshots or presentations. Run the training script and use the metrics actually produced by the held-out test set.
+The included example metrics and demo result are based on synthetic benchmark data. They should not be treated as production fraud-detection performance. For a fresh benchmark, generate the data and run the training script again.
