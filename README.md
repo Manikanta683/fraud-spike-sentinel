@@ -10,6 +10,12 @@ A defense-focused transaction fraud detection and investigation system for ident
 
 The dashboard provides transaction-level risk scoring, investigation reasons, bounded decisions, and an audit event for each investigation.
 
+### 🎥 Demo Video
+
+**Watch the project demonstration:**
+
+👉 https://streamable.com/7cjyeg
+
 ### Example investigation
 
 ![Live investigation result](assets/demo-result.svg)
