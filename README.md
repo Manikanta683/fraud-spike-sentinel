@@ -2,6 +2,20 @@
 
 A defense-only AI/ML system for detecting unusual fraud activity and investigating high-risk transactions.
 
+## 🚀 Live Demo
+
+**Try the deployed Streamlit dashboard:** open the Streamlit app URL provided with this project submission.
+
+### Live investigation result
+
+The demo takes transaction and behavioral signals, produces a risk score, explains the strongest risk signals, recommends a bounded action, and records an audit event.
+
+![Live investigation result](assets/demo-result.svg)
+
+**Example result:** `100.0%` risk score → `ESCALATE_FOR_REVIEW`
+
+> The screenshot/visual above is a representative result from the live demo using synthetic benchmark data.
+
 ## What it demonstrates
 
 - Synthetic transaction generation
