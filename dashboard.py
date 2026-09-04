@@ -2,11 +2,14 @@ import json
 from pathlib import Path
 
 import pandas as pd
-import requests
 import streamlit as st
+
+from app.investigator import investigate
+from app.model_service import predict
 
 ROOT = Path(__file__).resolve().parent
 DATA = ROOT / "data" / "transactions.csv"
+MODEL = ROOT / "models" / "fraud_model.joblib"
 METRICS = ROOT / "models" / "metrics.json"
 
 st.set_page_config(page_title="Fraud-Spike Sentinel", page_icon="🛡️", layout="wide")
@@ -14,12 +17,34 @@ st.set_page_config(page_title="Fraud-Spike Sentinel", page_icon="🛡️", layou
 st.title("🛡️ Fraud-Spike Sentinel")
 st.caption("Defense-only fraud detection, bounded investigation and auditability.")
 
-if not DATA.exists() or not METRICS.exists():
-    st.warning("Run the data generation and training commands from README.md first.")
-    st.stop()
+# Streamlit Cloud does not retain generated files from the development machine.
+# Bootstrap a small synthetic dataset and train the model on first launch.
+if not DATA.exists() or not MODEL.exists() or not METRICS.exists():
+    with st.spinner("Preparing the synthetic fraud-detection model for this demo..."):
+        from scripts.generate_data import generate
+        from scripts.train import main as train_model
 
-df = pd.read_csv(DATA)
-metrics = json.loads(METRICS.read_text())
+        DATA.parent.mkdir(exist_ok=True)
+        MODEL.parent.mkdir(exist_ok=True)
+        if not DATA.exists():
+            generate(50000)
+        if not MODEL.exists() or not METRICS.exists():
+            train_model()
+    st.success("Demo model is ready.")
+
+@st.cache_data
+
+def load_demo_data():
+    return pd.read_csv(DATA)
+
+@st.cache_data
+
+def load_metrics():
+    return json.loads(METRICS.read_text())
+
+
+df = load_demo_data()
+metrics = load_metrics()
 
 c1, c2, c3, c4 = st.columns(4)
 c1.metric("Transactions", f"{len(df):,}")
@@ -45,7 +70,6 @@ with st.form("investigate"):
     merchant_fraud_rate_7d = st.number_input(
         "Merchant fraud rate (7d)", min_value=0.0, max_value=1.0, value=0.08, step=0.01
     )
-
     submitted = st.form_submit_button("Run investigation")
 
 if submitted:
@@ -63,9 +87,8 @@ if submitted:
     }
 
     try:
-        response = requests.post("http://127.0.0.1:8000/investigate", json=payload, timeout=5)
-        response.raise_for_status()
-        result = response.json()
+        risk_score = predict(payload)
+        result = investigate(payload, risk_score)
 
         st.metric("Risk score", f"{result['risk_score']:.1%}")
         st.subheader(f"Decision: {result['decision']}")
@@ -79,6 +102,5 @@ if submitted:
 
         st.write("**Audit event**")
         st.json(result["audit"])
-
-    except requests.RequestException:
-        st.error("API is not running. Start it with: uvicorn app.api:app --reload")
+    except Exception as exc:
+        st.error(f"Investigation failed: {exc}")
